@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Gula-gula Jawi</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;700&family=Noto+Naskh+Arabic:wght@700&display=swap">
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{display:flex;justify-content:center;font-family:Fredoka,"Trebuchet MS",sans-serif;color:#4a1d6e;background:#ffd6f0;-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
+#app{position:relative;width:100%;max-width:480px;height:100%;overflow-y:auto;background:linear-gradient(#ffd6f0,#c9b6ff);padding:calc(env(safe-area-inset-top,0px) + 6px) 12px calc(env(safe-area-inset-bottom,0px) + 12px)}
+#hud{display:flex;justify-content:space-between;padding:6px 8px;font-weight:700;font-size:1.2rem}
+#mw{position:relative;height:26px;margin:2px 4px 8px;border:3px solid #7a3d9e;border-radius:14px;background:#fff;overflow:hidden}
+#mb{height:100%;width:0;background:linear-gradient(90deg,#ff6fa5,#ffb347);transition:width .3s}
+#mw span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:.85rem;font-weight:700}
+#bw{display:flex;justify-content:center;touch-action:none}
+#board{position:relative;width:100%;aspect-ratio:7/8;background:rgba(255,255,255,.55);border:4px solid #7a3d9e;border-radius:18px;touch-action:none;overflow:hidden}
+.tile{position:absolute;left:0;top:0;width:var(--S);height:var(--S);padding:2px;transition:transform .2s ease-out}
+.in{width:100%;height:100%;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:calc(var(--S)*.58);box-shadow:inset 0 -4px 0 rgba(0,0,0,.18),inset 0 3px 0 rgba(255,255,255,.5)}
+.sel .in{outline:4px solid #fff;transform:scale(1.1)}
+.pop .in{animation:pop .22s forwards}
+@keyframes pop{to{transform:scale(0);opacity:0}}
+#msg{min-height:2em;text-align:center;font-weight:700;margin-top:8px}
+.note{font-size:.88rem;margin:8px 0;text-align:center}
+#ov{position:absolute;inset:0;z-index:5;display:none;overflow-y:auto;text-align:center;padding:calc(env(safe-area-inset-top,0px) + 14px) 16px 20px;background:linear-gradient(#ffd6f0,#c9b6ff)}
+h1{margin:14px 0 4px;font-size:2rem;line-height:1.1}
+.sub{margin:0 0 14px}.err{color:#d00050;font-weight:700;min-height:1.2em}
+input{width:100%;padding:11px;border:3px solid #7a3d9e;border-radius:10px;font:inherit;margin:5px 0;background:#fff;color:#4a1d6e;-webkit-user-select:text;user-select:text}
+.card{background:#fff;border:4px solid #7a3d9e;border-radius:14px;padding:12px;margin-top:6px;box-shadow:0 5px 0 rgba(0,0,0,.18)}
+.em{font-size:3.2rem;line-height:1.1}.rumi{font-size:2.1rem;font-weight:700}
+.jw{font-family:"Noto Naskh Arabic","Amiri",serif;font-size:2.4rem;font-weight:700;direction:rtl;line-height:1.5}.jw.s{font-size:1.6rem}
+.tip{margin:10px 0;font-size:.95rem}
+.btn,.blk{display:block;width:100%;margin:10px 0;border:4px solid #a02a6c;border-radius:14px;background:#ff6fa5;color:#fff;box-shadow:inset 0 5px 0 rgba(255,255,255,.35),0 5px 0 #a02a6c;cursor:pointer;font-family:inherit}
+.btn{padding:14px;font-size:1.1rem;font-weight:700;text-align:center;text-decoration:none}
+.btn.alt{background:#2fb86b;border-color:#1c7a47;box-shadow:inset 0 5px 0 rgba(255,255,255,.35),0 5px 0 #1c7a47}
+.blk{min-height:72px;font-family:"Noto Naskh Arabic","Amiri",serif;font-size:2.2rem;font-weight:700;line-height:1.4}.blk.r{font-family:Fredoka,sans-serif;font-size:1.6rem}
+.blk.good,.blk.show{background:#2fb86b;border-color:#1c7a47}.blk.bad{background:#888;border-color:#555}
+#qm{min-height:2.4em;font-weight:700;margin-top:6px}.stars{font-size:2.4rem;margin:8px 0}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+<div id="hud"><span>Langkah: <b id="mv">25</b></span><span>❓ <b id="qn">0</b>/10</span><span>🪙 <b id="sc">0</b></span></div>
+<div id="mw"><div id="mb"></div><span>Meter Soalan Manis</span></div>
+<div id="bw"><div id="board"></div></div>
+<div id="msg"></div>
+<p class="note">Geser atau ketuk dua gula-gula bersebelahan untuk padankan 3 yang sama.</p>
+<div id="ov"></div>
+</div>
+<script>
+const W=[["🌴","umbut","اومبوت"],["🐓","unggas","اوڠݢس"],["🐪","unta","اونتا"],["🎣","umpan","اومڤن"],["📦","objek","اوبجيک"],["🫀","organ","اورݢن"],["🌺","orkid","اورکيد"],["🌊","ombak","اومبق"],["🍆","terung","تروڠ"],["🥬","kangkung","کڠکوڠ"],["🥣","lesung","لسوڠ"],["🌾","tepung","تڤوڠ"],["🥤","minum","مينوم"],["✨","murni","مورني"],["🎋","buluh","بولوه"],["✂️","gunting","کونتيڠ"],["🔢","nombor","نومبور"],["🧸","montel","مونتيل"],["🌀","goncang","کونچڠ"],["🆘","tolong","تولوڠ"],["🚗","volvo","ۏولۏو"],["🚇","terowong","تروۏوڠ"],["🏺","labu sayong","لابو سايوڠ"],["🏥","hospital","هوسڤيتل"],["🔱","tombak","تومبق"],["👶","bongsu","بوڠسو"],["🥜","gajus","ݢاجوس"],["🗼","condong","چوندوڠ"]];
+const SEN=[["اين کريتا ____ بهارو","ۏولۏو"],["جاڠن برچاکڤ ____","بوهوڠ"],["ساي سوک ماکن ____","سايور"],["فوزي ____ باسيکل ستياڤ هاري","کايوه"],["ساي انق ____","بوڠسو"],["بواه ____ سدڤ راسان","ݢاجوس"],["کامي ملاوت منارا ____","چوندوڠ"]];
+const TY=[["🍬","#ff6fa5"],["🍭","#b57bff"],["🍫","#d9a066"],["🍩","#ffd23f"],["🧁","#5ad1ff"],["🍪","#7ddc6f"]];
+const R=8,C=7,TH=10,MV=25,QMAX=10;
+const $=s=>document.querySelector(s),ov=$("#ov"),board=$("#board");
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const sh=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(p=>p[1]);
+const esc=s=>String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function ls(k,d){try{return JSON.parse(localStorage.getItem(k))||d}catch(e){return d}}
+function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+function beep(f){try{const c=new(window.AudioContext||window.webkitAudioContext)(),o=c.createOscillator(),v=c.createGain();o.frequency.value=f;o.type="triangle";v.gain.value=.08;o.connect(v);v.connect(c.destination);o.start();o.stop(c.currentTime+.15)}catch(e){}}
+function jopts(j){const i=j.lastIndexOf("و");const a=i<0?j.slice(0,-1):j.slice(0,i)+j.slice(i+1),b=i<0?j+"ا":j.slice(0,i)+"ي"+j.slice(i+1);return sh([j,a,b])}
+function ropts(r){const f=m=>m=="u"?"o":"u",a=r.replace(/[uo]/g,f);let b=r.replace(/[uo]/,f);if(b==a)b=r.slice(0,-1);return sh([r,a,b])}
+let S=46,G=[],score=0,moves=0,meter=0,ok=0,asked=0,busy=0,state="home",sel=null,st=null,L="",P=ls("pj_p",{}),wq=[],sq=[],mt=0;
+const rnd=()=>Math.random()*6|0;
+function fresh(r,c){let t;do{t=rnd()}while((c>=2&&G[r][c-1]&&G[r][c-2]&&G[r][c-1].t==t&&G[r][c-2].t==t)||(r>=2&&G[r-1][c]&&G[r-2][c]&&G[r-1][c].t==t&&G[r-2][c].t==t));return t}
+function setT(o,t){o.t=t;o.i.textContent=TY[t][0];o.i.style.background=TY[t][1]}
+function newTile(t){const el=document.createElement("div");el.className="tile";const i=document.createElement("div");i.className="in";el.appendChild(i);const o={t,el,i};setT(o,t);board.appendChild(el);return o}
+function place(o,r,c){o.el.style.transform=`translate(${c*S}px,${r*S}px)`}
+function sw(a,b,c,d){const t=G[a][b];G[a][b]=G[c][d];G[c][d]=t}
+function matches(){const m=new Set();
+for(let r=0;r<R;r++){let c=0;while(c<C){let e=c;while(e+1<C&&G[r][e+1].t==G[r][c].t)e++;if(e-c>=2)for(let k=c;k<=e;k++)m.add(r*C+k);c=e+1}}
+for(let c=0;c<C;c++){let r=0;while(r<R){let e=r;while(e+1<R&&G[e+1][c].t==G[r][c].t)e++;if(e-r>=2)for(let k=r;k<=e;k++)m.add(k*C+c);r=e+1}}
+return m}
+function hasMove(){for(let r=0;r<R;r++)for(let c=0;c<C;c++)for(const [dr,dc] of [[0,1],[1,0]]){const r2=r+dr,c2=c+dc;if(r2>=R||c2>=C)continue;sw(r,c,r2,c2);const m=matches().size;sw(r,c,r2,c2);if(m)return true}return false}
+function reroll(){let n=0;do{for(let r=0;r<R;r++)for(let c=0;c<C;c++)setT(G[r][c],fresh(r,c));n++}while((matches().size||!hasMove())&&n<60)}
+function hud(){$("#mv").textContent=moves;$("#sc").textContent=score;$("#qn").textContent=asked;$("#mb").style.width=Math.min(100,meter/TH*100)+"%"}
+function say(m){$("#msg").textContent=m;clearTimeout(mt);mt=setTimeout(()=>{$("#msg").textContent=""},1600)}
+function show(h){ov.innerHTML=h;ov.style.display="block";ov.scrollTop=0}
+function hide(){ov.style.display="none"}
+function home(){state="home";show(`<h1>🍬 Gula-gula Jawi</h1><p class="sub">Padankan gula-gula dan jawab Soalan Manis!</p><input id="nm" maxlength="30" placeholder="Nama" autocomplete="off"><input id="kl" maxlength="20" placeholder="Kelas" autocomplete="off"><div class="err" id="err"></div><button class="btn alt" onclick="start()">Main</button><p class="note">Ada 25 langkah. Bila meter Soalan Manis penuh, jawab soalan Jawi untuk bonus langkah. Jawab 10 soalan untuk tamatkan permainan!</p>`);
+$("#nm").value=P.nama||"";$("#kl").value=P.kelas||""}
+function start(){const e=$("#nm"),n=e?e.value.trim():(P.nama||"");if(!n){$("#err").textContent="Taip nama dahulu.";e.focus();return}
+P.nama=n;if(e)P.kelas=$("#kl").value.trim();sv("pj_p",P);
+S=Math.floor((board.clientWidth||340)/C)||46;board.style.setProperty("--S",S+"px");board.innerHTML="";
+G=[];for(let r=0;r<R;r++){G[r]=[];for(let c=0;c<C;c++){const o=newTile(fresh(r,c));G[r][c]=o;place(o,r,c)}}
+if(!hasMove())reroll();
+score=0;moves=MV;meter=0;ok=0;asked=0;busy=0;sel=null;wq=[];sq=[];hud();hide();state="play"}
+function clearSel(){if(sel&&G[sel.r]&&G[sel.r][sel.c])G[sel.r][sel.c].el.classList.remove("sel");sel=null}
+function gravity(){for(let c=0;c<C;c++){let w=R-1;
+for(let r=R-1;r>=0;r--){const t=G[r][c];if(t){if(w!==r){G[w][c]=t;G[r][c]=null}w--}}
+for(let r=w;r>=0;r--){const t=newTile(rnd());G[r][c]=t;t.el.style.transform=`translate(${c*S}px,${(r-w-1)*S}px)`}}
+void board.offsetHeight;
+for(let r=0;r<R;r++)for(let c=0;c<C;c++)place(G[r][c],r,c)}
+async function clearSet(m,mult,nm){score+=m.size*10*mult;if(!nm)meter+=m.size;hud();beep(500+mult*120);
+for(const i of m){const r=(i/C)|0,c=i%C,t=G[r][c];t.el.classList.add("pop");setTimeout(()=>t.el.remove(),230);G[r][c]=null}
+await sleep(240);gravity();await sleep(330)}
+async function settle(){let combo=0,m;while((m=matches()).size){combo++;if(combo>1)say("Kombo x"+combo+"!");await clearSet(m,combo)}}
+async function rain(){say("Hujan gula-gula! 🍬");const m=new Set();while(m.size<6)m.add(Math.random()*R*C|0);await clearSet(m,1,1);await settle()}
+function nextQ(){const t=asked<=3?0:asked<=6?1:asked<=9?2:Math.random()*3|0;
+if(t==2){if(!sq.length)sq=sh(SEN);const s=sq.pop();return{top:`<div class="jw s">${s[0]}</div>`,ans:s[1],opts:jopts(s[1]),cls:"blk",tip:"Isi tempat kosong dengan ejaan Jawi yang betul."}}
+if(!wq.length)wq=sh(W);const w=wq.pop();
+return t==0?{top:`<div class="em">${w[0]}</div><div class="rumi">${w[1]}</div>`,ans:w[2],opts:jopts(w[2]),cls:"blk",tip:"Pilih ejaan Jawi yang betul."}:{top:`<div class="em">${w[0]}</div><div class="jw">${w[2]}</div>`,ans:w[1],opts:ropts(w[1]),cls:"blk r",tip:"Pilih bacaan Rumi yang betul."}}
+function ask(){return new Promise(res=>{meter-=TH;hud();state="ask";asked++;const q=nextQ();
+show(`<h1 style="font-size:1.5rem">🍬 Soalan Manis!</h1><div class="card">${q.top}</div><div class="tip">${q.tip}</div><div id="opts">${q.opts.map(x=>`<button class="${q.cls}" data-v="${esc(x)}">${esc(x)}</button>`).join("")}</div><div id="qm"></div>`);
+let lock=0;$("#opts").onclick=e=>{const k=e.target.closest(".blk");if(!k||lock)return;lock=1;const good=k.dataset.v===q.ans;
+if(good){ok++;score+=20;moves+=2;k.classList.add("good");beep(880);$("#qm").textContent="Betul! Bonus +2 langkah dan hujan gula-gula!"}
+else{k.classList.add("bad");document.querySelectorAll(".blk").forEach(x=>{if(x.dataset.v===q.ans)x.classList.add("show")});beep(150);$("#qm").textContent="Jawapan: "+q.ans}
+hud();setTimeout(()=>{hide();state="play";res(good)},1500)}})}
+async function after(){while(meter>=TH&&asked<QMAX){const good=await ask();if(good)await rain()}
+if(moves>0&&asked<QMAX&&!hasMove()){say("Susun semula!");reroll();await sleep(300)}
+if(moves<=0||asked>=QMAX)finish()}
+async function trySwap(r1,c1,r2,c2){if(busy||state!="play")return;busy=1;clearSel();
+sw(r1,c1,r2,c2);place(G[r1][c1],r1,c1);place(G[r2][c2],r2,c2);await sleep(200);
+if(!matches().size){sw(r1,c1,r2,c2);place(G[r1][c1],r1,c1);place(G[r2][c2],r2,c2);beep(150);await sleep(200);busy=0;return}
+moves--;hud();await settle();await after();busy=0}
+function finish(){state="end";const r=asked?ok/asked:0,n=r>=.8?3:r>=.5?2:1;
+const cd="PJ2:"+btoa(unescape(encodeURIComponent(JSON.stringify([P.nama,P.kelas||"",score,ok,asked,Date.now().toString(36)+Math.random().toString(36).slice(2,6)]))));
+L=`Gula-gula Jawi\nNama: ${P.nama}\nKelas: ${P.kelas||"-"}\nMarkah: ${score} (${ok}/${asked} soalan betul)\nKod: ${cd}`;
+show(`<h1>Tahniah, ${esc(P.nama)}!</h1><div class="stars">${"⭐".repeat(n)}</div><p class="sub">Markah: <b>🪙 ${score}</b><br>${ok} betul daripada ${asked} soalan</p><a class="btn alt" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(L)}">Hantar kepada guru (WhatsApp)</a><button class="btn" onclick="start()">Main lagi</button><p class="note"><a href="#" onclick="cp();return false" style="color:inherit">Atau salin keputusan</a></p>`)}
+async function cp(){try{await navigator.clipboard.writeText(L);alert("Keputusan disalin. Hantar kepada guru melalui WhatsApp.")}catch(e){alert(L)}}
+board.addEventListener("pointerdown",e=>{if(state!="play"||busy)return;const b=board.getBoundingClientRect(),c=Math.floor((e.clientX-b.left)/S),r=Math.floor((e.clientY-b.top)/S);if(r<0||c<0||r>=R||c>=C)return;st={r,c,x:e.clientX,y:e.clientY};e.preventDefault()});
+board.addEventListener("pointerup",e=>{if(!st)return;const {r,c,x,y}=st;st=null;const dx=e.clientX-x,dy=e.clientY-y;
+if(Math.max(Math.abs(dx),Math.abs(dy))>S*.3){let r2=r,c2=c;if(Math.abs(dx)>Math.abs(dy))c2+=dx>0?1:-1;else r2+=dy>0?1:-1;if(r2<0||c2<0||r2>=R||c2>=C)return;trySwap(r,c,r2,c2)}
+else if(sel&&Math.abs(sel.r-r)+Math.abs(sel.c-c)==1){const a=sel;trySwap(a.r,a.c,r,c)}
+else if(sel&&sel.r==r&&sel.c==c)clearSel();
+else{clearSel();sel={r,c};G[r][c].el.classList.add("sel")}});
+board.addEventListener("pointercancel",()=>{st=null});
+home();
+</script>
+</body>
+</html>
